@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+    <class name="com.sqlanalyzer.hibernate.test.bean.User" table="user_master">
+        <id name="id" type="int">
+            <column name="id"/>
+            <generator class="identity"/>
+        </id>
+        <property name="Username" type="java.lang.String">
+            <column name="username"/>
+        </property>
+        <property name="Password" type="java.lang.String">
+            <column name="password"/>
+        </property>
+        <property name="Email" type="java.lang.String">
+            <column name="email"/>
+        </property>
+        <set name="Messages" cascade="refresh">
+            <key column="user_id"/>
+            <one-to-many class="com.sqlanalyzer.hibernate.test.bean.Message"/>
+        </set>
+        <set name="CreditCard" cascade="refresh">
+            <key column="user_id"/>
+            <one-to-many class="com.sqlanalyzer.hibernate.test.bean.CreditCard"/>
+        </set>
+    </class>
+</hibernate-mapping>
