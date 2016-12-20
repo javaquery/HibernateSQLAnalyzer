@@ -5,35 +5,34 @@
  */
 package com.sqlanalyzer.hibernate.core;
 
+import com.sqlanalyzer.hibernate.core.parser.CriteriaExpressionParser;
+import com.sqlanalyzer.hibernate.core.parser.CriteriaParser;
+import com.sqlanalyzer.hibernate.core.parser.MSSQLCriteriaParser;
+import com.sqlanalyzer.hibernate.core.parser.MySQLCriteriaParser;
+import com.sqlanalyzer.hibernate.core.parser.OracleCriteriaParser;
+import com.sqlanalyzer.hibernate.core.parser.SubCriteriaParser;
 import com.sqlanalyzer.hibernate.exception.HibernateSQLAnalyzerException;
 import com.sqlanalyzer.hibernate.util.Constants;
 import com.sqlanalyzer.hibernate.util.HibernateDialect;
 import java.lang.reflect.Field;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
 import org.hibernate.Criteria;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.CriteriaQuery;
-import org.hibernate.criterion.Criterion;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.engine.spi.TypedValue;
 import org.hibernate.internal.CriteriaImpl;
-import org.hibernate.internal.CriteriaImpl.CriterionEntry;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
 import org.hibernate.loader.OuterJoinLoader;
 import org.hibernate.loader.criteria.CriteriaLoader;
 import org.hibernate.loader.criteria.CriteriaQueryTranslator;
 import org.hibernate.persister.entity.OuterJoinLoadable;
-import org.hibernate.type.BooleanType;
-import org.hibernate.type.CustomType;
-import org.hibernate.type.StringType;
-import org.hibernate.type.TimestampType;
 
 /**
- * Hibernate Criteria processor class. 
- * You can use it independently by calling constructor.
+ * Hibernate Criteria processor class. You can use it independently by calling
+ * constructor.
+ *
  * @author vicky.thakor
  * @date 8th July, 2016
  */
@@ -42,6 +41,7 @@ public class HibernateCriteria {
     private final SessionFactory sessionFactory;
     private final Criteria criteria;
     private final String dialect;
+    private final List<CriteriaParser> criteriaParsers = new ArrayList<CriteriaParser>();
 
     public HibernateCriteria(SessionFactory sessionFactory, Criteria criteria, String dialect) {
         this.sessionFactory = sessionFactory;
@@ -51,7 +51,8 @@ public class HibernateCriteria {
 
     /**
      * Convert {@link Criteria} to SQLQuery.
-     * @return 
+     *
+     * @return
      */
     public String criteriaSQLQuery() {
         if (criteria == null) {
@@ -89,7 +90,8 @@ public class HibernateCriteria {
 
     /**
      * Convert {@link Criteria} to SQLQuery with real values.
-     * @return 
+     *
+     * @return
      */
     public String criteriaValuedSQLQuery() {
         String query = criteriaSQLQuery();
@@ -98,80 +100,32 @@ public class HibernateCriteria {
             String entityName = criteriaImpl.getEntityOrClassName();
             CriteriaQuery criteriaQuery = new CriteriaQueryTranslator((SessionFactoryImpl) sessionFactory, criteriaImpl, entityName, "this_");
 
-            if (criteriaImpl.getMaxResults() != null) {
-                if (HibernateDialect.SQL_SERVER_DIALECT.toString().equalsIgnoreCase(dialect)) {
-                    query = query.replace("select", "select top " + criteriaImpl.getMaxResults());
-                } else if (HibernateDialect.MYSQL_DIALECT.toString().equalsIgnoreCase(dialect)
-                        || HibernateDialect.MYSQL_INNODB_DIALECT.toString().equalsIgnoreCase(dialect)
-                        || HibernateDialect.MYSQL_MYISAM_DIALECT.toString().equalsIgnoreCase(dialect)
-                        || HibernateDialect.POSTGRE_SQL_DIALECT.toString().equalsIgnoreCase(dialect)) {
-                    query = query + " limit " + criteriaImpl.getMaxResults();
-                } else if (HibernateDialect.ORACLE_DIALECT.toString().equalsIgnoreCase(dialect)
-                        || HibernateDialect.ORACLE_9_DIALECT.toString().equalsIgnoreCase(dialect)) {
-                    query = query.replace("rownum <= ?", "rownum <= " + criteriaImpl.getMaxResults());
-                }
-            }
+            CriteriaHolder criteriaHolder = new CriteriaHolder();
+            criteriaHolder.setCriteria(criteria);
+            criteriaHolder.setCriteriaImpl(criteriaImpl);
+            criteriaHolder.setCriteriaQuery(criteriaQuery);
+            criteriaHolder.setDialect(dialect);
+            criteriaHolder.setSqlQuery(query);
 
-            /* Get all expression of Query(i.e `where` condition) */
-            Iterator<CriterionEntry> iterator = criteriaImpl.iterateExpressionEntries();
-            while (iterator.hasNext()) {
-                CriterionEntry criterionEntry = iterator.next();
-                Criterion criterion = criterionEntry.getCriterion();
-                TypedValue[] typedValues = criterion.getTypedValues(criteria, criteriaQuery);
-
-                String expression = criterion.toSqlString(criteria, criteriaQuery);
-                String expressionImpl = expression;
-                for (TypedValue typedValue : typedValues) {
-                    expressionImpl = replaceParameterValue(typedValue, expressionImpl);
-                }
-                expression = replaceSpecialChar(expression);
-                query = query.replaceFirst(expression, expressionImpl);
+            criteriaParsers.add(new MSSQLCriteriaParser());
+            criteriaParsers.add(new MySQLCriteriaParser());
+            criteriaParsers.add(new OracleCriteriaParser());
+            criteriaParsers.add(new CriteriaExpressionParser());
+            criteriaParsers.add(new SubCriteriaParser());
+            for (CriteriaParser criteriaParser : criteriaParsers) {
+                criteriaParser.parse(criteriaHolder);
             }
+            return criteriaHolder.getSqlQuery();
         } catch (Exception e) {
             throw new HibernateSQLAnalyzerException(Constants.CRITERIA_TO_VALUED_QUERY_ERROR, e);
         }
-        return query;
     }
-
+    
     /**
-     * Replace `?` with real value.
-     *
-     * @param typedValue
-     * @param query
-     * @return
+     * Add your custom {@link CriteriaParser}
+     * @param criteriaParser 
      */
-    private String replaceParameterValue(TypedValue typedValue, String query) {
-        if (typedValue != null && query != null) {
-            if (typedValue.getType() instanceof StringType
-                    || typedValue.getType() instanceof CustomType) {
-                String value = typedValue.getValue().toString();
-                value = value.replace("'", "''");
-                query = query.replace("?", "\'" + value + "\'");
-            } else if (typedValue.getType() instanceof TimestampType) {
-                Date date = (Date) typedValue.getValue();
-                Timestamp timestamp = new Timestamp(date.getTime());
-                query = query.replace("?", "\'" + timestamp + "\'");
-            } else if (typedValue.getType() instanceof BooleanType) {
-                int value = (Boolean) typedValue.getValue() ? 1 : 0;
-                query = query.replace("?", String.valueOf(value));
-            } else {
-                query = query.replaceFirst("\\?", String.valueOf(typedValue.getValue()));
-            }
-        }
-        return query;
-    }
-
-    /**
-     * Get String replaced with special character to use in
-     * String.replaceFirst() as regular expression.
-     *
-     * @return
-     */
-    private String replaceSpecialChar(String str) {
-        str = str.replace("(", "\\(");
-        str = str.replace(")", "\\)");
-        str = str.replace("?", "\\?");
-        str = str.replace(",", "\\,");
-        return str;
+    public void addCriteriaParser(CriteriaParser criteriaParser){
+        criteriaParsers.add(criteriaParser);
     }
 }
