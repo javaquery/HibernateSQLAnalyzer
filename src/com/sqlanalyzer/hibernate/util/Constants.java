@@ -14,4 +14,5 @@ public class Constants {
     public static final String CRITERIA_TO_VALUED_QUERY_ERROR = "Error ocuured while converting Criteria to valued SQLQuery.";
     public static final String NULL_CRITERIA = "Can't process with null Criteria";
     public static final String NULL_DIALECT = "Can't process with null Dialect";
+    public static final String CONNECTION_OBJECT_ERROR = "Can't create connection object.";
 }
