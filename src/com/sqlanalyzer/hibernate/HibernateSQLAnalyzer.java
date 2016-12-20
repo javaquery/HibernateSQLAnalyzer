@@ -10,11 +10,16 @@ import com.sqlanalyzer.SQLAnalyzer;
 import com.sqlanalyzer.database.service.DBService;
 import com.sqlanalyzer.executionplans.SQLPlan;
 import com.sqlanalyzer.hibernate.core.HibernateCriteria;
+import com.sqlanalyzer.hibernate.exception.HibernateSQLAnalyzerException;
+import com.sqlanalyzer.hibernate.util.Constants;
 import com.sqlanalyzer.hibernate.util.HibernateDialect;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionImpl;
 
@@ -35,7 +40,7 @@ public class HibernateSQLAnalyzer extends SQLAnalyzer {
         this.session = hibernateSession;
         this.sessionFactory = hibernateSession.getSessionFactory();
         initAnalyzer();
-        usingConnection(((SessionImpl) session).connection());
+        usingConnection(getConnection());
         usingConfigurator(configurator);
     }
     
@@ -103,5 +108,24 @@ public class HibernateSQLAnalyzer extends SQLAnalyzer {
         }
         
         return super.generateReport();
+    }
+    
+    /**
+     * @author vicky.thakor
+     * @since 2016-12-20
+     * @return 
+     */
+    private Connection getConnection(){
+        Connection connection = null;
+        try {
+            connection = ((SessionImpl) session).connection();
+        } catch (Exception e) {
+            try {
+                connection = sessionFactory.getSessionFactoryOptions().getServiceRegistry().getService(ConnectionProvider.class).getConnection();
+            } catch (SQLException ex) {
+                throw new HibernateSQLAnalyzerException(Constants.CONNECTION_OBJECT_ERROR, ex);
+            }
+        }
+        return connection;
     }
 }
