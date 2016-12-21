@@ -5,12 +5,12 @@
  */
 package com.sqlanalyzer.hibernate.core;
 
-import com.sqlanalyzer.hibernate.core.parser.CriteriaExpressionParser;
+import com.sqlanalyzer.hibernate.core.parser.CriteriaQueryExpressionParser;
 import com.sqlanalyzer.hibernate.core.parser.CriteriaQueryParser;
-import com.sqlanalyzer.hibernate.core.parser.MSSQLCriteriaParser;
-import com.sqlanalyzer.hibernate.core.parser.MySQLCriteriaParser;
-import com.sqlanalyzer.hibernate.core.parser.OracleCriteriaParser;
-import com.sqlanalyzer.hibernate.core.parser.SubCriteriaParser;
+import com.sqlanalyzer.hibernate.core.parser.MSSQLCriteriaQueryParser;
+import com.sqlanalyzer.hibernate.core.parser.MySQLCriteriaQueryParser;
+import com.sqlanalyzer.hibernate.core.parser.OracleCriteriaQueryParser;
+import com.sqlanalyzer.hibernate.core.parser.SubCriteriaQueryParser;
 import com.sqlanalyzer.hibernate.exception.HibernateSQLAnalyzerException;
 import com.sqlanalyzer.hibernate.util.Constants;
 import com.sqlanalyzer.hibernate.util.HibernateDialect;
@@ -123,11 +123,11 @@ public class HibernateCriteria {
      * @since v2.2
      */
     private void addDefaultCriteriaQueryParser() {
-        criteriaQueryParsers.add(new MSSQLCriteriaParser());
-        criteriaQueryParsers.add(new MySQLCriteriaParser());
-        criteriaQueryParsers.add(new OracleCriteriaParser());
-        criteriaQueryParsers.add(new CriteriaExpressionParser());
-        criteriaQueryParsers.add(new SubCriteriaParser());
+        criteriaQueryParsers.add(new MSSQLCriteriaQueryParser());
+        criteriaQueryParsers.add(new MySQLCriteriaQueryParser());
+        criteriaQueryParsers.add(new OracleCriteriaQueryParser());
+        criteriaQueryParsers.add(new CriteriaQueryExpressionParser());
+        criteriaQueryParsers.add(new SubCriteriaQueryParser());
     }
 
     /**
