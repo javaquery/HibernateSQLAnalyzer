@@ -5,7 +5,7 @@
  */
 package com.sqlanalyzer.hibernate.core.parser;
 
-import com.sqlanalyzer.hibernate.core.CriteriaHolder;
+import com.sqlanalyzer.hibernate.core.HibernateCriteriaHolder;
 import com.sqlanalyzer.hibernate.util.HibernateDialect;
 
 /**
@@ -14,10 +14,10 @@ import com.sqlanalyzer.hibernate.util.HibernateDialect;
  * @author vicky.thakor
  * @since v2.2
  */
-public class MySQLCriteriaParser implements CriteriaParser {
+public class MySQLCriteriaParser implements CriteriaQueryParser {
 
     @Override
-    public void parse(CriteriaHolder criteriaHolder) {
+    public void parse(HibernateCriteriaHolder criteriaHolder) {
         if (HibernateDialect.MYSQL_DIALECT.toString().equalsIgnoreCase(criteriaHolder.getDialect())
                 || HibernateDialect.MYSQL_INNODB_DIALECT.toString().equalsIgnoreCase(criteriaHolder.getDialect())
                 || HibernateDialect.MYSQL_MYISAM_DIALECT.toString().equalsIgnoreCase(criteriaHolder.getDialect())

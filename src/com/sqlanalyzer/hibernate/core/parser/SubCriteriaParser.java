@@ -5,7 +5,7 @@
  */
 package com.sqlanalyzer.hibernate.core.parser;
 
-import com.sqlanalyzer.hibernate.core.CriteriaHolder;
+import com.sqlanalyzer.hibernate.core.HibernateCriteriaHolder;
 import com.sqlanalyzer.hibernate.util.CriteriaUtil;
 import java.util.Iterator;
 import org.hibernate.criterion.Criterion;
@@ -19,10 +19,10 @@ import org.hibernate.internal.CriteriaImpl.Subcriteria;
  * @author vicky.thakor
  * @since v2.2
  */
-public class SubCriteriaParser implements CriteriaParser {
+public class SubCriteriaParser implements CriteriaQueryParser {
 
     @Override
-    public void parse(CriteriaHolder criteriaHolder) {
+    public void parse(HibernateCriteriaHolder criteriaHolder) {
         Iterator<Subcriteria> iterator = criteriaHolder.getCriteriaImpl().iterateSubcriteria();
         while (iterator.hasNext()) {
             Subcriteria criterionEntry = iterator.next();

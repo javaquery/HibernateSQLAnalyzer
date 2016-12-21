@@ -5,7 +5,7 @@
  */
 package com.sqlanalyzer.hibernate.core.parser;
 
-import com.sqlanalyzer.hibernate.core.CriteriaHolder;
+import com.sqlanalyzer.hibernate.core.HibernateCriteriaHolder;
 import com.sqlanalyzer.hibernate.util.CriteriaUtil;
 import java.util.Iterator;
 import org.hibernate.criterion.Criterion;
@@ -18,10 +18,10 @@ import org.hibernate.internal.CriteriaImpl;
  * @author vicky.thakor
  * @since v2.2
  */
-public class CriteriaExpressionParser implements CriteriaParser {
+public class CriteriaExpressionParser implements CriteriaQueryParser {
 
     @Override
-    public void parse(CriteriaHolder criteriaHolder) {
+    public void parse(HibernateCriteriaHolder criteriaHolder) {
         /* Get all expression of Query(i.e `where` condition) */
         Iterator<CriteriaImpl.CriterionEntry> iterator = criteriaHolder.getCriteriaImpl().iterateExpressionEntries();
         while (iterator.hasNext()) {
