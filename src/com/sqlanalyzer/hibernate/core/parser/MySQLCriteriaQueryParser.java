@@ -14,7 +14,7 @@ import com.sqlanalyzer.hibernate.util.HibernateDialect;
  * @author vicky.thakor
  * @since v2.2
  */
-public class MySQLCriteriaParser implements CriteriaQueryParser {
+public class MySQLCriteriaQueryParser implements CriteriaQueryParser {
 
     @Override
     public void parse(HibernateCriteriaHolder criteriaHolder) {

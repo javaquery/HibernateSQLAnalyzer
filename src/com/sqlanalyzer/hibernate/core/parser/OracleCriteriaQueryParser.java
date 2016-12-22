@@ -9,18 +9,19 @@ import com.sqlanalyzer.hibernate.core.HibernateCriteriaHolder;
 import com.sqlanalyzer.hibernate.util.HibernateDialect;
 
 /**
- * Parse criteria for MSSQL.
+ * Parse criteria for Oracle.
  *
  * @author vicky.thakor
  * @since v2.2
  */
-public class MSSQLCriteriaParser implements CriteriaQueryParser {
+public class OracleCriteriaQueryParser implements CriteriaQueryParser {
 
     @Override
     public void parse(HibernateCriteriaHolder criteriaHolder) {
-        if (HibernateDialect.SQL_SERVER_DIALECT.toString().equalsIgnoreCase(criteriaHolder.getDialect())) {
+        if (HibernateDialect.ORACLE_DIALECT.toString().equalsIgnoreCase(criteriaHolder.getDialect())
+                || HibernateDialect.ORACLE_9_DIALECT.toString().equalsIgnoreCase(criteriaHolder.getDialect())) {
             if (criteriaHolder.getCriteriaImpl().getMaxResults() != null) {
-                String query = criteriaHolder.getSqlQuery().replace("select", "select top " + criteriaHolder.getCriteriaImpl().getMaxResults());
+                String query = criteriaHolder.getSqlQuery().replace("rownum <= ?", "rownum <= " + criteriaHolder.getCriteriaImpl().getMaxResults());
                 criteriaHolder.setSqlQuery(query);
             }
         }

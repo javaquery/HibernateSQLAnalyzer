@@ -19,7 +19,7 @@ import org.hibernate.internal.CriteriaImpl.Subcriteria;
  * @author vicky.thakor
  * @since v2.2
  */
-public class SubCriteriaParser implements CriteriaQueryParser {
+public class SubCriteriaQueryParser implements CriteriaQueryParser {
 
     @Override
     public void parse(HibernateCriteriaHolder criteriaHolder) {

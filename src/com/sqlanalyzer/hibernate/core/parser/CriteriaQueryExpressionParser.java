@@ -18,7 +18,7 @@ import org.hibernate.internal.CriteriaImpl;
  * @author vicky.thakor
  * @since v2.2
  */
-public class CriteriaExpressionParser implements CriteriaQueryParser {
+public class CriteriaQueryExpressionParser implements CriteriaQueryParser {
 
     @Override
     public void parse(HibernateCriteriaHolder criteriaHolder) {

@@ -5,12 +5,12 @@
  */
 package com.sqlanalyzer.hibernate.core;
 
-import com.sqlanalyzer.hibernate.core.parser.CriteriaExpressionParser;
-import com.sqlanalyzer.hibernate.core.parser.CriteriaParser;
-import com.sqlanalyzer.hibernate.core.parser.MSSQLCriteriaParser;
-import com.sqlanalyzer.hibernate.core.parser.MySQLCriteriaParser;
-import com.sqlanalyzer.hibernate.core.parser.OracleCriteriaParser;
-import com.sqlanalyzer.hibernate.core.parser.SubCriteriaParser;
+import com.sqlanalyzer.hibernate.core.parser.CriteriaQueryExpressionParser;
+import com.sqlanalyzer.hibernate.core.parser.CriteriaQueryParser;
+import com.sqlanalyzer.hibernate.core.parser.MSSQLCriteriaQueryParser;
+import com.sqlanalyzer.hibernate.core.parser.MySQLCriteriaQueryParser;
+import com.sqlanalyzer.hibernate.core.parser.OracleCriteriaQueryParser;
+import com.sqlanalyzer.hibernate.core.parser.SubCriteriaQueryParser;
 import com.sqlanalyzer.hibernate.exception.HibernateSQLAnalyzerException;
 import com.sqlanalyzer.hibernate.util.Constants;
 import com.sqlanalyzer.hibernate.util.HibernateDialect;
@@ -41,12 +41,14 @@ public class HibernateCriteria {
     private final SessionFactory sessionFactory;
     private final Criteria criteria;
     private final String dialect;
-    private final List<CriteriaParser> criteriaParsers = new ArrayList<CriteriaParser>();
+    private final List<CriteriaQueryParser> criteriaQueryParsers = new ArrayList<CriteriaQueryParser>();
+    private String sqlQuery;
 
     public HibernateCriteria(SessionFactory sessionFactory, Criteria criteria, String dialect) {
         this.sessionFactory = sessionFactory;
         this.criteria = criteria;
         this.dialect = dialect;
+        addDefaultCriteriaQueryParser();
     }
 
     /**
@@ -73,15 +75,15 @@ public class HibernateCriteria {
                         sessionImpl.getLoadQueryInfluencers());
                 Field field = OuterJoinLoader.class.getDeclaredField("sql");
                 field.setAccessible(true);
-                String query = (String) field.get(criteriaLoader);
+                sqlQuery = (String) field.get(criteriaLoader);
 
                 if (HibernateDialect.ORACLE_DIALECT.toString().equalsIgnoreCase(dialect)
                         || HibernateDialect.ORACLE_9_DIALECT.toString().equalsIgnoreCase(dialect)) {
                     if (criteriaImpl.getMaxResults() != null) {
-                        query = "SELECT * FROM (" + query + ") WHERE ROWNUM <= ?";
+                        sqlQuery = "SELECT * FROM (" + sqlQuery + ") WHERE ROWNUM <= ?";
                     }
                 }
-                return query;
+                return sqlQuery;
             } catch (Exception e) {
                 throw new HibernateSQLAnalyzerException(Constants.CRITERIA_TO_QUERY_ERROR, e);
             }
@@ -94,25 +96,12 @@ public class HibernateCriteria {
      * @return
      */
     public String criteriaValuedSQLQuery() {
-        String query = criteriaSQLQuery();
+        /* Get SQL query */
+        criteriaSQLQuery();
         try {
-            CriteriaImpl criteriaImpl = (CriteriaImpl) criteria;
-            String entityName = criteriaImpl.getEntityOrClassName();
-            CriteriaQuery criteriaQuery = new CriteriaQueryTranslator((SessionFactoryImpl) sessionFactory, criteriaImpl, entityName, "this_");
-
-            CriteriaHolder criteriaHolder = new CriteriaHolder();
-            criteriaHolder.setCriteria(criteria);
-            criteriaHolder.setCriteriaImpl(criteriaImpl);
-            criteriaHolder.setCriteriaQuery(criteriaQuery);
-            criteriaHolder.setDialect(dialect);
-            criteriaHolder.setSqlQuery(query);
-
-            criteriaParsers.add(new MSSQLCriteriaParser());
-            criteriaParsers.add(new MySQLCriteriaParser());
-            criteriaParsers.add(new OracleCriteriaParser());
-            criteriaParsers.add(new CriteriaExpressionParser());
-            criteriaParsers.add(new SubCriteriaParser());
-            for (CriteriaParser criteriaParser : criteriaParsers) {
+            /* Process SQL query for values. */
+            HibernateCriteriaHolder criteriaHolder = buildHibernateCriteriaHolder();
+            for (CriteriaQueryParser criteriaParser : criteriaQueryParsers) {
                 criteriaParser.parse(criteriaHolder);
             }
             return criteriaHolder.getSqlQuery();
@@ -120,12 +109,42 @@ public class HibernateCriteria {
             throw new HibernateSQLAnalyzerException(Constants.CRITERIA_TO_VALUED_QUERY_ERROR, e);
         }
     }
-    
+
     /**
-     * Add your custom {@link CriteriaParser}
-     * @param criteriaParser 
+     * Add your custom {@link CriteriaQueryParser}
+     *
+     * @param criteriaQueryParser
      */
-    public void addCriteriaParser(CriteriaParser criteriaParser){
-        criteriaParsers.add(criteriaParser);
+    public void addCriteriaQueryParser(CriteriaQueryParser criteriaQueryParser) {
+        criteriaQueryParsers.add(criteriaQueryParser);
+    }
+
+    /**
+     * @since v2.2
+     */
+    private void addDefaultCriteriaQueryParser() {
+        criteriaQueryParsers.add(new MSSQLCriteriaQueryParser());
+        criteriaQueryParsers.add(new MySQLCriteriaQueryParser());
+        criteriaQueryParsers.add(new OracleCriteriaQueryParser());
+        criteriaQueryParsers.add(new CriteriaQueryExpressionParser());
+        criteriaQueryParsers.add(new SubCriteriaQueryParser());
+    }
+
+    /**
+     * @since v2.2
+     * @return 
+     */
+    private HibernateCriteriaHolder buildHibernateCriteriaHolder() {
+        CriteriaImpl criteriaImpl = (CriteriaImpl) criteria;
+        String entityName = criteriaImpl.getEntityOrClassName();
+        CriteriaQuery criteriaQuery = new CriteriaQueryTranslator((SessionFactoryImpl) sessionFactory, criteriaImpl, entityName, "this_");
+
+        HibernateCriteriaHolder criteriaHolder = new HibernateCriteriaHolder();
+        criteriaHolder.setCriteria(criteria);
+        criteriaHolder.setCriteriaImpl(criteriaImpl);
+        criteriaHolder.setCriteriaQuery(criteriaQuery);
+        criteriaHolder.setDialect(dialect);
+        criteriaHolder.setSqlQuery(sqlQuery);
+        return criteriaHolder;
     }
 }
