@@ -36,7 +36,7 @@ List<SQLPlan> sQLPlans = new HibernateSQLAnalyzer(objSession, null)
 
 for (SQLPlan sQLPlan : sQLPlans) {
 	System.out.println(sQLPlan.getHTMLReport());
-	Desktop.getDesktop().open(new File(sQLPlan.reportFiles().get(0)));
+	Desktop.getDesktop().open(sqlPlan.getReportFile());
 }
 </pre>
 
